@@ -2,10 +2,10 @@
   "use strict";
 
   const CITY = {
-    lon: { name: "ロンドン", color: "var(--lon)" },
-    par: { name: "パリ", color: "var(--par)" },
-    rom: { name: "ローマ", color: "var(--rom)" },
-    move: { name: "移動", color: "var(--move)" },
+    lon: { name: "ロンドン", color: "var(--lon)", light: 1 },
+    par: { name: "パリ", color: "var(--par)", light: 1 },
+    rom: { name: "ローマ", color: "var(--rom)", light: 0 },
+    move: { name: "移動", color: "var(--move)", light: 1 },
   };
   const CAT = { sight: "観光", food: "食事", move: "移動", shop: "買い物", rest: "ホテル・休憩", other: "その他" };
   const WD = ["日", "月", "火", "水", "木", "金", "土"];
@@ -91,7 +91,7 @@
       .map((d) => {
         const c = CITY[d.city] || CITY.move;
         const dt = dateFor(d.n);
-        return `<button class="chip" style="background:${c.color}" data-jump="${d.n}">Day ${d.n}<small>${dt ? fmt(dt) : esc(c.name)}</small></button>`;
+        return `<button class="chip" data-light="${c.light}" style="background:${c.color}" data-jump="${d.n}">Day ${d.n}<small>${dt ? fmt(dt) : esc(c.name)}</small></button>`;
       })
       .join("");
   }
@@ -136,7 +136,7 @@
         const meal = (k, l) => `<span class="${m[k] ? "on" : ""}">${l}${m[k] && m[k] !== "付" ? "：" + esc(m[k]) : ""}</span>`;
         const needsHotel = d.stay && d.stay !== "機中泊" && d.stay !== "—";
         return `<article class="day" id="day-${d.n}">
-        <div class="dayhead" style="background:${c.color}">
+        <div class="dayhead" data-light="${c.light}" style="background:${c.color}">
           <div><div class="n">DAY ${d.n}</div><h2>${esc(d.route || c.name)}</h2></div>
           <div class="date">${dt ? fmt(dt) : ""}</div>
         </div>
