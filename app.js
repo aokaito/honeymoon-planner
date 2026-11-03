@@ -485,7 +485,9 @@
       if (error) throw error;
       msg.textContent = "パスワード再設定のメールを送りました。メールのリンクを開くと、新しいパスワードを設定できます";
     } catch (err) {
-      msg.textContent = /rate|seconds/i.test(err.message || "") ? "少し時間をおいてからもう一度お試しください" : "送れませんでした：" + (err.message || "");
+      msg.textContent = /rate|seconds/i.test(err.message || "")
+        ? "メールの送信回数の上限に達しました（1時間に2通まで）。1時間ほどおいてからもう一度お試しください"
+        : "送れませんでした：" + (err.message || "");
       msg.classList.add("warn");
     } finally {
       $("forgotBtn").disabled = false;
