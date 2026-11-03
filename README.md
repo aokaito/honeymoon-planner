@@ -1,6 +1,8 @@
 # honeymoon-planner
 
 新婚旅行（HIS 添乗員同行 ロンドン・パリ・ローマ 9日間）のしおりアプリ。
+公開URL: https://honeymoon-plan0109.netlify.app/
+
 2人で日程を編集・共有でき、一度開いた内容は電波がなくても表示できます。
 
 ## 構成
