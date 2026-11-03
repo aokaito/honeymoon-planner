@@ -119,3 +119,6 @@
 .chip{box-shadow:inset 0 0 0 1px rgba(74,61,54,.06)}
 .chip[data-light="0"],.dayhead[data-light="0"]{color:#fff}
 label input:focus,label select:focus,label textarea:focus,.datebar input:focus{outline:2px solid var(--pink-l);outline-offset:0;border-color:var(--pink)}
+.showpw{display:flex;align-items:center;gap:6px;margin-top:-4px}
+.showpw input{display:inline-block;width:auto;margin:0}
+#pwMsg.warn{color:var(--warn)}
