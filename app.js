@@ -16,14 +16,11 @@
   const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : "");
 
   const state = { trip: {}, days: [], items: [], syncedAt: null, online: navigator.onLine, canEdit: false };
+  const PASS_KEY = "honeymoon-pass";
   let sb = null;
-  let session = null;
+  let pass = null;
   let editing = null;
   let channel = null;
-  // パスワード再設定メールのリンクから開いたかどうか（URL の # 部分で判定）
-  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
-  let recoveryPending = hashParams.get("type") === "recovery";
-  const hashError = hashParams.get("error_description");
 
   // ---------- local cache (offline viewing) ----------
   function loadCache() {
@@ -169,7 +166,7 @@
   function showScreen(name) {
     $("login").hidden = name !== "login";
     $("main").hidden = name !== "main";
-    $("topbar").hidden = name !== "main" || !session;
+    $("topbar").hidden = name !== "main" || !pass;
   }
 
   // ---------- tabs / nav ----------
@@ -201,7 +198,7 @@
   }
 
   function editable() {
-    return state.online && state.canEdit && sb && session;
+    return state.online && state.canEdit && sb && pass;
   }
 
   function openSheet(mode, obj) {
@@ -261,16 +258,52 @@
     }
   });
 
+
+  // ---------- data access (all through passphrase-checked RPCs) ----------
+  async function rpc(name, args) {
+    const { data, error } = await sb.rpc(name, { p: pass, ...args });
+    if (error) throw error;
+    if (data && data.error) {
+      const e = new Error(data.error);
+      e.code = data.error;
+      throw e;
+    }
+    return data;
+  }
+
+  function handleAuthError(err) {
+    if (err && (err.code === "invalid" || err.code === "not_set")) {
+      forgetPass();
+      showScreen("login");
+      const msg = $("loginMsg");
+      msg.textContent = err.code === "not_set" ? "合言葉がまだ設定されていません" : "合言葉が変わりました。新しい合言葉を入れてください";
+      msg.classList.add("warn");
+      return true;
+    }
+    if (err && err.code === "locked") {
+      renderStatus({ msg: "間違いが続いたため、10分ほど操作できません", warn: true });
+      return true;
+    }
+    return false;
+  }
+
+  function notifyOthers() {
+    try {
+      channel?.send({ type: "broadcast", event: "changed", payload: {} });
+    } catch (_) {}
+  }
+
   async function guarded(fn) {
     $("saveBtn").disabled = true;
     try {
-      const { error } = await fn();
-      if (error) throw error;
+      await fn();
       closeSheet();
+      notifyOthers();
       await refresh();
     } catch (err) {
       console.error(err);
-      renderStatus({ msg: "保存できませんでした。通信状況を確認してもう一度お試しください", warn: true });
+      if (!handleAuthError(err)) renderStatus({ msg: "保存できませんでした。通信状況を確認してもう一度お試しください", warn: true });
+      closeSheet();
     } finally {
       $("saveBtn").disabled = false;
     }
@@ -280,15 +313,15 @@
     e.preventDefault();
     if (!editing || !editable()) return;
     const { mode, obj } = editing;
-    const now = new Date().toISOString();
     if (mode === "day") {
       const hotel = $("fHotel").value.trim();
       const note = $("fDayNote").value.trim();
       if (hotel === (obj.hotel || "") && note === (obj.note || "")) return closeSheet();
-      guarded(() => sb.from("days").update({ hotel, note, updated_at: now }).eq("n", obj.n));
+      guarded(() => rpc("update_day", { day_n: obj.n, new_hotel: hotel, new_note: note }));
       return;
     }
-    const body = {
+    const item = {
+      id: mode === "edit" ? obj.id : "",
       title: $("fTitle").value.trim(),
       day: Number(daySel.value),
       cat: $("fCat").value,
@@ -297,17 +330,16 @@
       place: $("fPlace").value.trim(),
       url: safeUrl($("fUrl").value.trim()),
       note: $("fNote").value.trim(),
-      updated_at: now,
+      sort_order: mode === "edit" ? obj.sort_order || 0 : Date.now(),
     };
-    if (!body.title) return;
-    if (mode === "new") guarded(() => sb.from("items").insert({ ...body, tour: false, sort_order: Date.now() }));
-    else guarded(() => sb.from("items").update(body).eq("id", obj.id));
+    if (!item.title) return;
+    guarded(() => rpc("save_item", { item }));
   });
 
   $("delBtn").onclick = () => $("confirmBox").classList.add("show");
   $("noDel").onclick = () => $("confirmBox").classList.remove("show");
   $("yesDel").onclick = () => {
-    if (editing?.mode === "edit") guarded(() => sb.from("items").delete().eq("id", editing.obj.id));
+    if (editing?.mode === "edit") guarded(() => rpc("delete_item", { item_id: editing.obj.id }));
   };
 
   let dateTimer = null;
@@ -317,9 +349,13 @@
     clearTimeout(dateTimer);
     dateTimer = setTimeout(async () => {
       if (v === (state.trip.start_date || null)) return;
-      const { error } = await sb.from("trip").update({ start_date: v, updated_at: new Date().toISOString() }).eq("id", 1);
-      if (error) renderStatus({ msg: "出発日を保存できませんでした", warn: true });
-      else refresh();
+      try {
+        await rpc("set_start_date", { d: v });
+        notifyOthers();
+        refresh();
+      } catch (err) {
+        if (!handleAuthError(err)) renderStatus({ msg: "出発日を保存できませんでした", warn: true });
+      }
     }, 400);
   });
 
@@ -333,29 +369,23 @@
     }
   };
 
-  // ---------- data ----------
   let refreshing = null;
   async function refresh() {
-    if (!sb || !session || !navigator.onLine) return;
+    if (!sb || !pass || !navigator.onLine) return;
     if (refreshing) return refreshing;
     refreshing = (async () => {
       try {
-        const [t, d, i] = await Promise.all([
-          sb.from("trip").select("*").eq("id", 1).maybeSingle(),
-          sb.from("days").select("*").order("n"),
-          sb.from("items").select("*"),
-        ]);
-        const err = t.error || d.error || i.error;
-        if (err) throw err;
-        state.trip = t.data || {};
-        state.days = d.data || [];
-        state.items = i.data || [];
+        const data = await rpc("get_plan", {});
+        state.trip = data.trip || {};
+        state.days = data.days || [];
+        state.items = data.items || [];
         state.syncedAt = new Date().toISOString();
+        state.canEdit = true;
         saveCache();
         renderAll();
       } catch (err) {
         console.error(err);
-        renderStatus({ msg: "最新の日程を取得できませんでした。保存済みの内容を表示しています", warn: true });
+        if (!handleAuthError(err)) renderStatus({ msg: "最新の日程を取得できませんでした。保存済みの内容を表示しています", warn: true });
       } finally {
         refreshing = null;
       }
@@ -371,147 +401,98 @@
 
   function subscribe() {
     if (channel || !sb) return;
-    channel = sb
-      .channel("honeymoon-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "items" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "days" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "trip" }, scheduleRefresh)
-      .subscribe();
-  }
-
-  async function checkMember() {
-    const email = (session?.user?.email || "").toLowerCase();
-    const { data, error } = await sb.from("members").select("email").eq("email", email).maybeSingle();
-    if (error) throw error;
-    return !!data;
+    // 相手が保存したら「変わったよ」の合図だけを受け取り、最新を取り直す（データ自体は流さない）
+    channel = sb.channel("honeymoon-sync").on("broadcast", { event: "changed" }, scheduleRefresh).subscribe();
+    // 合図を取りこぼしても追いつけるよう、画面を開いている間は1分ごとにも確認する
+    setInterval(() => {
+      if (document.visibilityState === "visible") refresh();
+    }, 60000);
   }
 
   async function enterApp() {
-    $("whoami").textContent = session?.user?.email || "";
     showScreen("main");
     renderAll();
-    if (recoveryPending) openPw("recovery");
     if (!navigator.onLine) return;
-    try {
-      const ok = await checkMember();
-      state.canEdit = ok;
-      if (!ok) {
-        renderAll();
-        renderStatus({ msg: "このアカウントはまだ許可されていません（members に登録が必要です）", warn: true });
-        return;
-      }
-      await refresh();
-      subscribe();
-    } catch (err) {
-      console.error(err);
-      renderStatus({ msg: "接続できませんでした。保存済みの内容を表示しています", warn: true });
-    }
+    await refresh();
+    if (pass) subscribe();
   }
 
-  // ---------- login ----------
-  let signupMode = false;
-  $("toggleSignup").onclick = () => {
-    signupMode = !signupMode;
-    $("loginBtn").textContent = signupMode ? "アカウントを登録" : "ログイン";
-    $("toggleSignup").textContent = signupMode ? "ログインに戻る" : "はじめての方はこちら（アカウント登録）";
-    $("lPass").autocomplete = signupMode ? "new-password" : "current-password";
-    $("loginMsg").textContent = "";
-  };
+  // ---------- passphrase login ----------
+  function rememberPass(p) {
+    pass = p;
+    try {
+      localStorage.setItem(PASS_KEY, p);
+    } catch (_) {}
+  }
+  function forgetPass() {
+    pass = null;
+    state.canEdit = false;
+    try {
+      localStorage.removeItem(PASS_KEY);
+    } catch (_) {}
+  }
+
+  $("lShow").onchange = (e) => ($("lPass").type = e.target.checked ? "text" : "password");
+
   $("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = $("loginMsg");
     msg.classList.remove("warn");
+    msg.textContent = "";
     if (!navigator.onLine) {
-      msg.textContent = "オフラインのためログインできません";
+      msg.textContent = "オフラインのため確認できません";
       msg.classList.add("warn");
       return;
     }
-    const email = $("lEmail").value.trim().toLowerCase();
-    const password = $("lPass").value;
+    const p = $("lPass").value;
     $("loginBtn").disabled = true;
     try {
-      if (signupMode) {
-        const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
-        if (error) throw error;
-        if (!data.session) {
-          msg.textContent = "確認メールを送りました。メールのリンクを開いたあと、ここからログインしてください";
-          return;
-        }
-      } else {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+      const { data, error } = await sb.rpc("get_plan", { p });
+      if (error) throw error;
+      if (data && data.error) {
+        msg.textContent =
+          data.error === "locked" ? "間違いが続いたため、10分ほど待ってからお試しください"
+          : data.error === "not_set" ? "合言葉がまだ設定されていません"
+          : "合言葉が違います";
+        msg.classList.add("warn");
+        return;
       }
+      rememberPass(p);
+      $("lPass").value = "";
+      await enterApp();
     } catch (err) {
-      msg.textContent = /invalid login/i.test(err.message || "") ? "メールアドレスかパスワードが違います" : "うまくいきませんでした：" + (err.message || "");
+      msg.textContent = "接続できませんでした：" + (err.message || "");
       msg.classList.add("warn");
     } finally {
       $("loginBtn").disabled = false;
     }
   });
-  $("logoutBtn").onclick = async () => {
-    try {
-      await sb.auth.signOut();
-    } catch (_) {}
+
+  $("logoutBtn").onclick = () => {
+    forgetPass();
     try {
       localStorage.removeItem(CACHE_KEY);
     } catch (_) {}
     location.reload();
   };
 
-
-  // ---------- password ----------
-  $("lShow").onchange = (e) => ($("lPass").type = e.target.checked ? "text" : "password");
+  // ---------- change passphrase ----------
   $("pwShow").onchange = (e) => {
     ["pwCur", "pwNew", "pwNew2"].forEach((id) => ($(id).type = e.target.checked ? "text" : "password"));
   };
-
-  $("forgotBtn").onclick = async () => {
-    const msg = $("loginMsg");
-    msg.classList.remove("warn");
-    const email = $("lEmail").value.trim().toLowerCase();
-    if (!email) {
-      msg.textContent = "メールアドレスを入力してから押してください";
-      msg.classList.add("warn");
-      return;
-    }
-    if (!navigator.onLine) {
-      msg.textContent = "オフラインのため送れません";
-      msg.classList.add("warn");
-      return;
-    }
-    $("forgotBtn").disabled = true;
-    try {
-      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/" });
-      if (error) throw error;
-      msg.textContent = "パスワード再設定のメールを送りました。メールのリンクを開くと、新しいパスワードを設定できます";
-    } catch (err) {
-      msg.textContent = /rate|seconds/i.test(err.message || "")
-        ? "メールの送信回数の上限に達しました（1時間に2通まで）。1時間ほどおいてからもう一度お試しください"
-        : "送れませんでした：" + (err.message || "");
-      msg.classList.add("warn");
-    } finally {
-      $("forgotBtn").disabled = false;
-    }
-  };
-
-  let pwMode = "change";
-  function openPw(mode) {
-    pwMode = mode;
+  function openPw() {
+    if (!editable()) return;
     $("pwForm").reset();
     ["pwCur", "pwNew", "pwNew2"].forEach((id) => ($(id).type = "password"));
-    $("pwUser").value = session?.user?.email || "";
-    $("pwTitle").textContent = mode === "recovery" ? "新しいパスワードを設定" : "パスワード変更";
-    $("pwCurWrap").hidden = mode === "recovery";
-    $("pwCur").required = mode !== "recovery";
     $("pwMsg").textContent = "";
     $("pwMsg").classList.remove("warn");
     $("pwBg").classList.add("open");
-    setTimeout(() => $(mode === "recovery" ? "pwNew" : "pwCur").focus(), 50);
+    setTimeout(() => $("pwCur").focus(), 50);
   }
   function closePw() {
     $("pwBg").classList.remove("open");
   }
-  $("pwBtn").onclick = () => openPw("change");
+  $("pwBtn").onclick = openPw;
   $("pwCancel").onclick = closePw;
   $("pwBg").addEventListener("click", (e) => {
     if (e.target === $("pwBg")) closePw();
@@ -519,7 +500,6 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closePw();
   });
-
   $("pwForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = $("pwMsg");
@@ -529,27 +509,22 @@
     };
     msg.classList.remove("warn");
     msg.textContent = "";
+    const cur = $("pwCur").value;
     const next = $("pwNew").value;
-    if (next.length < 8) return warn("新しいパスワードは8文字以上にしてください");
-    if (next !== $("pwNew2").value) return warn("確認用のパスワードが一致しません");
+    if (next.length < 6) return warn("新しい合言葉は6文字以上にしてください");
+    if (next !== $("pwNew2").value) return warn("確認用の合言葉が一致しません");
+    if (next === cur) return warn("いまと同じ合言葉です");
     if (!navigator.onLine) return warn("オフラインのため変更できません");
     $("pwSave").disabled = true;
     try {
-      if (pwMode === "change") {
-        // いまのパスワードが合っているか確かめてから変更する
-        const { error: e1 } = await sb.auth.signInWithPassword({ email: session.user.email, password: $("pwCur").value });
-        if (e1) return warn("いまのパスワードが違います");
+      const { data, error } = await sb.rpc("change_passphrase", { p: cur, new_p: next });
+      if (error) throw error;
+      if (data && data.error) {
+        return warn(data.error === "invalid" ? "いまの合言葉が違います" : data.error === "locked" ? "間違いが続いたため、10分ほど待ってください" : "変更できませんでした");
       }
-      const { error } = await sb.auth.updateUser({ password: next });
-      if (error) {
-        if (/different from the old/i.test(error.message || "")) return warn("いまと同じパスワードには変更できません");
-        if (/weak|short/i.test(error.message || "")) return warn("もう少し複雑なパスワードにしてください");
-        throw error;
-      }
-      recoveryPending = false;
-      if (location.hash) history.replaceState(null, "", location.pathname);
-      msg.textContent = "パスワードを変更しました";
-      setTimeout(closePw, 1200);
+      rememberPass(next);
+      msg.textContent = "合言葉を変更しました。相手にも新しい合言葉を伝えてください";
+      setTimeout(closePw, 1800);
     } catch (err) {
       warn("変更できませんでした：" + (err.message || ""));
     } finally {
@@ -561,11 +536,12 @@
   window.addEventListener("online", () => {
     state.online = true;
     renderAll();
-    if (session) enterApp();
+    if (pass) enterApp();
   });
   window.addEventListener("offline", () => {
     state.online = false;
     closeSheet();
+    closePw();
     renderAll();
   });
   document.addEventListener("visibilitychange", () => {
@@ -573,43 +549,25 @@
   });
 
   // ---------- boot ----------
-  async function boot() {
+  function boot() {
     const hasCache = loadCache();
     const cfg = window.APP_CONFIG || {};
     if (window.supabase && cfg.supabaseUrl) {
       sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       });
     }
-    if (sb) {
-      try {
-        const { data } = await sb.auth.getSession();
-        session = data.session;
-      } catch (_) {}
-      sb.auth.onAuthStateChange((event, s) => {
-        const was = !!session;
-        session = s;
-        if (event === "PASSWORD_RECOVERY") recoveryPending = true;
-        if ((event === "SIGNED_IN" || event === "PASSWORD_RECOVERY") && !was) enterApp();
-        else if (event === "PASSWORD_RECOVERY") openPw("recovery");
-        if (event === "SIGNED_OUT") showScreen("login");
-      });
-    }
-    if (session) return enterApp();
+    try {
+      pass = localStorage.getItem(PASS_KEY);
+    } catch (_) {}
+    if (pass) return enterApp();
     if (hasCache && !navigator.onLine) {
-      // ログイン情報が切れていても、旅先の圏外では保存済みの日程を見られるようにする
+      // 圏外でも保存済みの日程は見られるようにする
       showScreen("main");
       renderAll();
       return;
     }
     showScreen("login");
-    if (hashError) {
-      $("loginMsg").textContent = /expired|invalid/i.test(hashError)
-        ? "メールのリンクの有効期限が切れています。もう一度「パスワードを忘れた場合」から送ってください"
-        : hashError;
-      $("loginMsg").classList.add("warn");
-      history.replaceState(null, "", location.pathname);
-    }
   }
 
   if ("serviceWorker" in navigator) {

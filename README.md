@@ -30,20 +30,22 @@ netlify.toml          Netlify の設定
 - `trip`：出発日（1行だけ）
 - `days`：1日ごとの都市・食事・宿泊・ホテル名・メモ
 - `items`：予定（日・時刻・タイトル・カテゴリ・場所・URL・メモ。`tour = true` はツアーに含まれる予定）
-- `members`：読み書きを許可するメールアドレス
 
-全テーブルで RLS を有効にしていて、`members` に登録されたメールアドレスでログインした人だけが読み書きできます。
+### 合言葉での利用
 
-### 2人のアカウントを許可する
+ログインは「2人で決めた合言葉」だけです。
 
-1. アプリの「はじめての方はこちら」から、それぞれメールアドレスとパスワードで登録し、確認メールのリンクを開く
-2. Supabase の SQL Editor で2人のメールアドレスを許可する
+- テーブルは RLS 有効・ポリシーなしで、ブラウザから直接は読み書きできません
+- 読み書きはすべて合言葉を確認する関数（`get_plan` / `save_item` / `delete_item` / `update_day` / `set_start_date` / `change_passphrase`）を通します
+- 合言葉は bcrypt のハッシュだけを `private.passphrase` に保存します
+- 10分間に20回間違えると、10分間すべて受け付けなくなります（総当たり対策）
+- 合言葉は端末に保存されるので、一度入れれば次からは入力不要です。画面右上の「合言葉を変更」から変えられます
+
+合言葉の初期設定・忘れたときの再設定は、Supabase の SQL Editor で実行します。
 
 ```sql
-insert into public.members (email) values ('自分のメール'), ('相手のメール');
+select private.set_passphrase('ここに合言葉');
 ```
-
-3. 2人とも登録できたら、他の人が登録できないよう Supabase の Authentication → Sign In / Providers で「Allow new users to sign up」をオフにする
 
 ## ローカルで動かす
 

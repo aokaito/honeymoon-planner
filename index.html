@@ -17,18 +17,16 @@
 </head>
 <body>
 <div class="wrap" id="app">
-  <div class="topbar" id="topbar" hidden><span id="whoami" style="color:var(--sub);padding:4px"></span><button class="linkbtn" id="pwBtn">パスワード変更</button><button class="linkbtn" id="logoutBtn">ログアウト</button></div>
+  <div class="topbar" id="topbar" hidden><button class="linkbtn" id="pwBtn">合言葉を変更</button><button class="linkbtn" id="logoutBtn">ログアウト</button></div>
 
   <section class="login" id="login" hidden>
     <h2>新婚旅行のしおり</h2>
-    <p>2人のアカウントでログインしてください</p>
+    <p>2人で決めた合言葉を入れてください</p>
     <form id="loginForm" autocomplete="on">
-      <label>メールアドレス<input type="email" id="lEmail" autocomplete="username" required></label>
-      <label>パスワード<input type="password" id="lPass" autocomplete="current-password" minlength="8" required></label>
-      <label class="showpw"><input type="checkbox" id="lShow"> パスワードを表示</label>
-      <button class="btn primary" type="submit" id="loginBtn">ログイン</button>
-      <button class="linkbtn" type="button" id="toggleSignup" style="display:block;margin:10px auto 0">はじめての方はこちら（アカウント登録）</button>
-      <button class="linkbtn" type="button" id="forgotBtn" style="display:block;margin:2px auto 0">パスワードを忘れた場合</button>
+      <input type="text" name="username" value="honeymoon" autocomplete="username" hidden>
+      <label>合言葉<input type="password" id="lPass" autocomplete="current-password" required></label>
+      <label class="showpw"><input type="checkbox" id="lShow"> 合言葉を表示</label>
+      <button class="btn primary" type="submit" id="loginBtn">はじめる</button>
       <div class="msg" id="loginMsg"></div>
     </form>
   </section>
@@ -161,12 +159,12 @@
 
 <div class="sheet-bg" id="pwBg">
   <form class="sheet" id="pwForm" autocomplete="on">
-    <h3 id="pwTitle">パスワード変更</h3>
-    <input type="email" id="pwUser" autocomplete="username" hidden>
-    <label id="pwCurWrap">いまのパスワード<input type="password" id="pwCur" autocomplete="current-password"></label>
-    <label>新しいパスワード（8文字以上）<input type="password" id="pwNew" autocomplete="new-password" minlength="8" required></label>
-    <label>新しいパスワード（確認）<input type="password" id="pwNew2" autocomplete="new-password" minlength="8" required></label>
-    <label class="showpw"><input type="checkbox" id="pwShow"> パスワードを表示</label>
+    <h3 id="pwTitle">合言葉を変更</h3>
+    <input type="text" name="username" value="honeymoon" autocomplete="username" hidden>
+    <label>いまの合言葉<input type="password" id="pwCur" autocomplete="current-password"></label>
+    <label>新しい合言葉（6文字以上）<input type="password" id="pwNew" autocomplete="new-password" minlength="6" required></label>
+    <label>新しい合言葉（確認）<input type="password" id="pwNew2" autocomplete="new-password" minlength="6" required></label>
+    <label class="showpw"><input type="checkbox" id="pwShow"> 合言葉を表示</label>
     <div class="actions">
       <button type="button" class="btn ghost" id="pwCancel">閉じる</button>
       <button type="submit" class="btn primary" id="pwSave">変更する</button>
