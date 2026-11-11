@@ -35,7 +35,8 @@ a{color:var(--brown)}
 .field{display:block;font-size:13px;color:var(--sub);margin-bottom:14px}
 .field input,.field select,.field textarea,.input{display:block;width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:48px;background:#fff;font-size:16px;color:var(--ink);-webkit-appearance:none;appearance:none}
 .field select{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%238a7468' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center/20px;padding-right:40px}
-.field textarea{resize:vertical;min-height:88px;line-height:1.55}
+.field textarea{resize:vertical;min-height:132px;max-height:46vh;overflow-y:auto;line-height:1.7;padding:12px 14px}
+#fDayNote{min-height:168px}
 .field input:focus,.field select:focus,.field textarea:focus,.input:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,158,149,.25)}
 .check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--sub);margin:-4px 0 16px;min-height:32px}
 .check input{width:20px;height:20px;accent-color:var(--brown);margin:0}

@@ -317,6 +317,14 @@
     document.documentElement.style.overflow = on ? "hidden" : "";
   }
 
+  // メモ欄は入力量に合わせて高さを広げる（max-height を超えたら内部スクロール）
+  function growNote(ta) {
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+  }
+  const noteFields = [$("fNote"), $("fDayNote")];
+  noteFields.forEach((ta) => ta.addEventListener("input", () => growNote(ta)));
+
   function openSheet(mode, obj) {
     if (!editable()) return;
     editing = { mode, obj };
@@ -342,6 +350,7 @@
       $("fUrl").value = obj.url || "";
       $("fNote").value = obj.note || "";
     }
+    noteFields.forEach(growNote);
     $("sheet").querySelector(".sheet-body").scrollTop = 0;
     $("sheetBg").classList.add("open");
     lockScroll(true);
