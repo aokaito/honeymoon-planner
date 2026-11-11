@@ -2,11 +2,13 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5efe6">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="新婚旅行">
+<meta name="format-detection" content="telephone=no">
 <title>新婚旅行 ロンドン・パリ・ローマ 9日間</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon-192.png">
@@ -16,54 +18,52 @@
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<div class="wrap" id="app">
-  <div class="topbar" id="topbar" hidden><button class="linkbtn" id="pwBtn">合言葉を変更</button><button class="linkbtn" id="logoutBtn">ログアウト</button></div>
 
-  <section class="login" id="login" hidden>
-    <h2>新婚旅行のしおり</h2>
-    <p>2人で決めた合言葉を入れてください</p>
+<!-- ログイン -->
+<section class="login" id="login" hidden>
+  <div class="login-card">
+    <div class="login-kicker">HONEYMOON 2027</div>
+    <h1>新婚旅行のしおり</h1>
+    <p>ロンドン・パリ・ローマ 9日間</p>
     <form id="loginForm" autocomplete="on">
       <input type="text" name="username" value="honeymoon" autocomplete="username" hidden>
-      <label>合言葉<input type="password" id="lPass" autocomplete="current-password" required></label>
-      <label class="showpw"><input type="checkbox" id="lShow"> 合言葉を表示</label>
-      <button class="btn primary" type="submit" id="loginBtn">はじめる</button>
+      <label class="field">合言葉<input type="password" id="lPass" autocomplete="current-password" required></label>
+      <label class="check"><input type="checkbox" id="lShow"> 合言葉を表示</label>
+      <button class="btn primary block" type="submit" id="loginBtn">はじめる</button>
       <div class="msg" id="loginMsg"></div>
     </form>
-  </section>
+  </div>
+</section>
 
-  <div id="main" hidden>
-  <header class="hero">
-    <div class="kicker">HONEYMOON 2027</div>
-    <h1>ロンドン・パリ・ローマ 9日間</h1>
-    <div class="route"><b>成田</b> → ロンドン 2泊 → パリ 3泊 → ローマ 2泊 → <b>成田</b>　｜　添乗員同行・ターキッシュ エアラインズ</div>
-    <div class="datebar">
-      <span>出発日</span><input type="date" id="startDate" min="2027-01-09" max="2027-03-20">
+<!-- アプリ本体 -->
+<div id="main" hidden>
+  <header class="appbar">
+    <div class="appbar-row">
+      <div class="brand">
+        <div class="brand-title">新婚旅行のしおり</div>
+        <div class="brand-sub">ロンドン・パリ・ローマ</div>
+      </div>
       <span class="countdown" id="countdown" hidden></span>
     </div>
-    <div class="status" id="status"></div>
+    <nav class="daystrip" id="daystrip" aria-label="日付を選ぶ"></nav>
   </header>
 
-  <nav class="tabs">
-    <div class="seg">
-      <button id="tabPlan" aria-pressed="true">日程</button>
-      <button id="tabInfo" aria-pressed="false">ツアー情報</button>
-    </div>
-    <div class="chips" id="chips"></div>
-  </nav>
+  <div class="banner" id="status" hidden></div>
 
-  <main id="plan"></main>
+  <main class="view" id="plan" aria-live="polite"></main>
 
-  <main id="info" class="info" hidden>
-    <section>
+  <main class="view info" id="info" hidden>
+    <h2 class="view-title">ツアー情報</h2>
+    <section class="card">
       <h3>フライト</h3>
-      <table>
-        <tr><td>往路（1日目）</td><td>成田 10:10 発 → イスタンブール乗継 → ロンドン 21:05 着</td></tr>
-        <tr><td>パリ→ローマ（6日目）</td><td>直行便（時刻は最終日程表で確定）</td></tr>
-        <tr><td>復路（8〜9日目）</td><td>ローマ 06:40〜07:05 発 → イスタンブール乗継 → 成田 08:40 着</td></tr>
-      </table>
-      <ul style="margin-top:8px;color:var(--sub);font-size:12.5px"><li>便名・時刻はツアーページ記載の目安。最終日程表で確認する</li></ul>
+      <dl class="rows">
+        <div><dt>往路（1日目）</dt><dd>成田 10:10 発 → イスタンブール乗継 → ロンドン 21:05 着</dd></div>
+        <div><dt>パリ → ローマ（6日目）</dt><dd>直行便（時刻は最終日程表で確定）</dd></div>
+        <div><dt>復路（8〜9日目）</dt><dd>ローマ 06:40〜07:05 発 → イスタンブール乗継 → 成田 08:40 着</dd></div>
+      </dl>
+      <p class="hint">便名・時刻はツアーページ記載の目安。最終日程表で確認する</p>
     </section>
-    <section>
+    <section class="card">
       <h3>ツアー代金に含まれるもの</h3>
       <ul>
         <li>添乗員同行、航空券（ターキッシュ エアラインズ・成田発着）</li>
@@ -74,29 +74,29 @@
         <li>特典：パリのセーヌ川クルーズ券、ローマのジェラートクーポン（各1人1枚）</li>
       </ul>
     </section>
-    <section>
+    <section class="card">
       <h3>別途かかる費用（目安・1人あたり）</h3>
-      <table>
-        <tr><td>燃油サーチャージ</td><td>約133,000円</td></tr>
-        <tr><td>海外空港諸税・システム利用料</td><td>約14,840円</td></tr>
-        <tr><td>国際観光旅客税</td><td>3,000円</td></tr>
-        <tr><td>成田空港施設使用料</td><td>2,460円</td></tr>
-        <tr><td>成田空港旅客保安サービス料</td><td>700円</td></tr>
-        <tr><td>宿泊税（フランス・イタリアの一部都市）</td><td>1泊 €2.6〜15.93</td></tr>
-      </table>
-      <ul style="margin-top:8px;color:var(--sub);font-size:12.5px"><li>ツアー代金：大人1人 299,800〜409,800円（出発日による・2〜3名1室）</li></ul>
+      <dl class="rows">
+        <div><dt>燃油サーチャージ</dt><dd>約133,000円</dd></div>
+        <div><dt>海外空港諸税・システム利用料</dt><dd>約14,840円</dd></div>
+        <div><dt>国際観光旅客税</dt><dd>3,000円</dd></div>
+        <div><dt>成田空港施設使用料</dt><dd>2,460円</dd></div>
+        <div><dt>成田空港旅客保安サービス料</dt><dd>700円</dd></div>
+        <div><dt>宿泊税（フランス・イタリアの一部都市）</dt><dd>1泊 €2.6〜15.93</dd></div>
+      </dl>
+      <p class="hint">ツアー代金：大人1人 299,800〜409,800円（出発日による・2〜3名1室）</p>
     </section>
-    <section>
+    <section class="card">
       <h3>パリ自由日のオプション（4・5日目）</h3>
-      <table>
-        <tr><td>ヴェルサイユ宮殿 午前観光（日本語ガイド）</td><td>17,390円</td></tr>
-        <tr><td>モン・サン・ミッシェル 1日観光</td><td>36,600円</td></tr>
-        <tr><td>モン・サン・ミッシェル ハネムーンプラン</td><td>43,000円</td></tr>
-        <tr><td>セーヌ川ディナークルーズ（18:15 / 20:30発）</td><td>18,120〜39,340円</td></tr>
-      </table>
-      <ul style="margin-top:8px;color:var(--sub);font-size:12.5px"><li>オンライン予約の画面で申し込む。ストライキや閉館で中止・返金なしの場合あり</li></ul>
+      <dl class="rows">
+        <div><dt>ヴェルサイユ宮殿 午前観光（日本語ガイド）</dt><dd>17,390円</dd></div>
+        <div><dt>モン・サン・ミッシェル 1日観光</dt><dd>36,600円</dd></div>
+        <div><dt>モン・サン・ミッシェル ハネムーンプラン</dt><dd>43,000円</dd></div>
+        <div><dt>セーヌ川ディナークルーズ（18:15 / 20:30発）</dt><dd>18,120〜39,340円</dd></div>
+      </dl>
+      <p class="hint">オンライン予約の画面で申し込む。ストライキや閉館で中止・返金なしの場合あり</p>
     </section>
-    <section>
+    <section class="card">
       <h3>覚えておくこと</h3>
       <ul>
         <li>出発21日前までに、パスポート番号・有効期限・生年月日をHISに連絡する</li>
@@ -108,70 +108,127 @@
         <li>たびレジ登録・外務省の海外安全情報を確認しておく</li>
       </ul>
     </section>
-    <p style="text-align:center;font-size:12.5px;margin-top:16px"><a href="https://tour.his-j.com/sp/02A_10/TI-KLF8030/">HISのツアーページを開く（TI-KLF8030）</a></p>
-  
-    <section class="backup">
+    <a class="btn ghost block linkout" href="https://tour.his-j.com/sp/02A_10/TI-KLF8030/" target="_blank" rel="noopener">HISのツアーページを開く</a>
+  </main>
+
+  <main class="view settings" id="settings" hidden>
+    <h2 class="view-title">設定</h2>
+    <section class="card">
+      <h3>出発日</h3>
+      <input type="date" id="startDate" class="input" min="2027-01-09" max="2027-03-20" aria-label="出発日">
+      <p class="hint">入れると、各日の日付と出発までの日数が表示されます</p>
+    </section>
+    <section class="card">
+      <h3>同期</h3>
+      <p class="sync" id="syncInfo">—</p>
+      <p class="hint">一度開いた日程は、電波がなくても表示できます（編集はオンライン時のみ）。変更は2人の画面に反映されます。</p>
+    </section>
+    <section class="card">
       <h3>バックアップ</h3>
-      <p style="font-size:13px;margin:0 0 8px">いまの日程をテキスト（JSON）としてコピーします。念のためメモアプリなどに貼っておくと安心です。</p>
-      <button class="btn ghost" id="copyBackup">日程をコピー</button> <span id="copyMsg" style="font-size:12px;color:var(--sub)"></span>
+      <p class="hint" style="margin-top:0">いまの日程をテキストとしてコピーします。念のためメモアプリなどに貼っておくと安心です。</p>
+      <button class="btn ghost block" id="copyBackup">日程をコピー</button>
+      <p class="hint center" id="copyMsg"></p>
+    </section>
+    <section class="card">
+      <h3>合言葉</h3>
+      <button class="btn ghost block" id="pwBtn">合言葉を変更</button>
+      <button class="btn quiet block" id="logoutBtn">この端末からログアウト</button>
     </section>
   </main>
 
-  <footer>予定をタップすると編集できます。変更は2人の画面に同時に反映されます。<br>一度開いた内容は、電波がなくても表示できます（編集はオンライン時のみ）。</footer>
-  </div>
+  <button class="fab" id="fab" aria-label="この日に予定を追加">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+  </button>
+
+  <nav class="tabbar" aria-label="メニュー">
+    <button data-tab="plan" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>日程</span>
+    </button>
+    <button data-tab="info">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v1.8a2.2 2.2 0 0 0 0 4.4v1.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5v-1.8a2.2 2.2 0 0 0 0-4.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.5 5.5v12" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2.2"/></svg>
+      <span>ツアー情報</span>
+    </button>
+    <button data-tab="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>設定</span>
+    </button>
+  </nav>
 </div>
 
+<!-- 予定・宿泊の編集シート -->
 <div class="sheet-bg" id="sheetBg">
   <form class="sheet" id="sheet" autocomplete="off">
-    <h3 id="sheetTitle">予定を編集</h3>
-    <div id="itemFields">
-      <label>タイトル<input id="fTitle" required maxlength="120" placeholder="例：ルーヴル美術館"></label>
-      <div class="row">
-        <label>日<select id="fDay"></select></label>
-        <label>カテゴリ<select id="fCat">
-          <option value="sight">観光</option><option value="food">食事</option><option value="move">移動</option>
-          <option value="shop">買い物</option><option value="rest">ホテル・休憩</option><option value="other">その他</option>
-        </select></label>
+    <div class="sheet-head">
+      <h3 id="sheetTitle">予定を編集</h3>
+      <button type="button" class="icon-btn" id="cancelBtn" aria-label="閉じる">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div id="itemFields">
+        <label class="field">タイトル<input id="fTitle" required maxlength="120" placeholder="例：ルーヴル美術館" enterkeyhint="done"></label>
+        <div class="row2">
+          <label class="field">開始<input type="time" id="fTime"></label>
+          <label class="field">終了<input type="time" id="fEnd"></label>
+        </div>
+        <div class="field">カテゴリ
+          <div class="seg-pick" id="fCatPick" role="radiogroup">
+            <button type="button" data-cat="sight">観光</button>
+            <button type="button" data-cat="food">食事</button>
+            <button type="button" data-cat="move">移動</button>
+            <button type="button" data-cat="shop">買い物</button>
+            <button type="button" data-cat="rest">休憩</button>
+            <button type="button" data-cat="other">その他</button>
+          </div>
+          <input type="hidden" id="fCat">
+        </div>
+        <label class="field">場所（Googleマップで開けます）<input id="fPlace" maxlength="200" placeholder="例：Musée du Louvre"></label>
+        <label class="field">メモ<textarea id="fNote" maxlength="2000" rows="3" placeholder="予約番号、チケット、行き方など"></textarea></label>
+        <label class="field">参考URL<input id="fUrl" type="url" inputmode="url" maxlength="500" placeholder="https://"></label>
+        <label class="field">日<select id="fDay"></select></label>
       </div>
-      <div class="row">
-        <label>開始<input type="time" id="fTime"></label>
-        <label>終了<input type="time" id="fEnd"></label>
+      <div id="dayFields" hidden>
+        <label class="field">ホテル名<input id="fHotel" maxlength="200" placeholder="最終日程表で決まったら入力"></label>
+        <label class="field">この日のメモ<textarea id="fDayNote" maxlength="2000" rows="4" placeholder="服装、集合時間、気をつけることなど"></textarea></label>
       </div>
-      <label>場所（Googleマップで開けます）<input id="fPlace" maxlength="200" placeholder="例：Musée du Louvre"></label>
-      <label>参考URL<input id="fUrl" type="url" maxlength="500" placeholder="https://"></label>
-      <label>メモ<textarea id="fNote" maxlength="2000" placeholder="予約番号、チケット、行き方など"></textarea></label>
+      <div id="delRow">
+        <button type="button" class="btn quiet danger block" id="delBtn">この予定を削除</button>
+        <div class="confirm" id="confirmBox">
+          <p>この予定を削除しますか？</p>
+          <div class="row2"><button type="button" class="btn ghost" id="noDel">やめる</button><button type="button" class="btn danger-fill" id="yesDel">削除する</button></div>
+        </div>
+      </div>
     </div>
-    <div id="dayFields" hidden>
-      <label>ホテル名<input id="fHotel" maxlength="200" placeholder="最終日程表で決まったら入力"></label>
-      <label>この日のメモ<textarea id="fDayNote" maxlength="2000" placeholder="服装、集合時間、気をつけることなど"></textarea></label>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn ghost" id="cancelBtn">閉じる</button>
-      <button type="submit" class="btn primary" id="saveBtn">保存</button>
-    </div>
-    <div class="actions" id="delRow"><button type="button" class="btn danger" id="delBtn">この予定を削除</button></div>
-    <div class="confirm" id="confirmBox">本当に削除しますか？
-      <div class="actions"><button type="button" class="btn ghost" id="noDel">やめる</button><button type="button" class="btn primary" style="background:var(--warn)" id="yesDel">削除する</button></div>
+    <div class="sheet-foot">
+      <button type="submit" class="btn primary block" id="saveBtn">保存</button>
     </div>
   </form>
 </div>
 
-
+<!-- 合言葉の変更シート -->
 <div class="sheet-bg" id="pwBg">
   <form class="sheet" id="pwForm" autocomplete="on">
-    <h3 id="pwTitle">合言葉を変更</h3>
-    <input type="text" name="username" value="honeymoon" autocomplete="username" hidden>
-    <label>いまの合言葉<input type="password" id="pwCur" autocomplete="current-password"></label>
-    <label>新しい合言葉（6文字以上）<input type="password" id="pwNew" autocomplete="new-password" minlength="6" required></label>
-    <label>新しい合言葉（確認）<input type="password" id="pwNew2" autocomplete="new-password" minlength="6" required></label>
-    <label class="showpw"><input type="checkbox" id="pwShow"> 合言葉を表示</label>
-    <div class="actions">
-      <button type="button" class="btn ghost" id="pwCancel">閉じる</button>
-      <button type="submit" class="btn primary" id="pwSave">変更する</button>
+    <div class="sheet-head">
+      <h3>合言葉を変更</h3>
+      <button type="button" class="icon-btn" id="pwCancel" aria-label="閉じる">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
     </div>
-    <div class="msg" id="pwMsg" style="font-size:12.5px;margin-top:10px;min-height:18px"></div>
+    <div class="sheet-body">
+      <input type="text" name="username" value="honeymoon" autocomplete="username" hidden>
+      <label class="field">いまの合言葉<input type="password" id="pwCur" autocomplete="current-password" required></label>
+      <label class="field">新しい合言葉（6文字以上）<input type="password" id="pwNew" autocomplete="new-password" minlength="6" required></label>
+      <label class="field">新しい合言葉（確認）<input type="password" id="pwNew2" autocomplete="new-password" minlength="6" required></label>
+      <label class="check"><input type="checkbox" id="pwShow"> 合言葉を表示</label>
+      <div class="msg" id="pwMsg"></div>
+    </div>
+    <div class="sheet-foot">
+      <button type="submit" class="btn primary block" id="pwSave">変更する</button>
+    </div>
   </form>
 </div>
+
 <script src="/vendor/supabase.js"></script>
 <script src="/config.js"></script>
 <script src="/app.js"></script>
