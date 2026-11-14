@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>画面イメージ：リンク集</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ---- リンク集だけのスタイル（モック用） ---- */
+.tabbar{grid-template-columns:repeat(4,1fr)}
+.links{list-style:none;margin:0;padding:0}
+.lk{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;box-shadow:var(--shadow);margin-bottom:10px;padding:0 4px 0 12px;min-height:68px}
+.lk a{flex:1;min-width:0;display:flex;align-items:center;gap:12px;color:var(--ink);text-decoration:none;padding:12px 0}
+.lk a:active{opacity:.7}
+.lk .ico{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:21px;background:var(--bgc)}
+.lk .txt{min-width:0}
+.lk .ttl{font-size:16px;font-weight:500;line-height:1.4;overflow-wrap:anywhere}
+.lk .host{font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lk .memo{font-size:13px;color:var(--ink);opacity:.8;margin-top:2px}
+.k-notes{--bgc:#fbf0c9}.k-map{--bgc:var(--green-xl)}.k-insta{--bgc:#fbe3df}.k-web{--bgc:#f0ebe5}.k-doc{--bgc:#e4ebf3}
+.paste{display:flex;gap:8px;margin-bottom:6px}
+.paste input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:0 14px;min-height:48px;background:#fff;font-size:16px}
+.paste input:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,158,149,.25)}
+.paste .btn{flex:none;background:var(--pink);color:#fff;padding:0 16px}
+.mock-note{margin:16px 4px 0;font-size:12px;color:var(--sub);text-align:center}
+</style>
+</head>
+<body>
+<div id="main">
+  <header class="appbar">
+    <div class="appbar-row">
+      <div class="brand">
+        <div class="brand-title">リンク集</div>
+        <div class="brand-sub">メモ・地図・お店のページなど</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="view">
+    <form class="paste" id="paste" onsubmit="return false">
+      <input id="pUrl" type="url" inputmode="url" placeholder="URLを貼り付け" aria-label="URL">
+      <button class="btn" id="addBtn" type="button">追加</button>
+    </form>
+    <p class="hint" style="margin:0 4px 16px">貼って「追加」を押すと一覧に入ります。名前はあとから変えられます</p>
+    <ul class="links" id="links"></ul>
+    <p class="mock-note">※ 画面イメージ（ダミーデータ）です。タップでリンクを開き、右の「…」で名前・メモの編集や削除をする想定</p>
+  </main>
+
+  <nav class="tabbar" aria-label="メニュー">
+    <button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>日程</span>
+    </button>
+    <button aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>リンク</span>
+    </button>
+    <button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v1.8a2.2 2.2 0 0 0 0 4.4v1.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5v-1.8a2.2 2.2 0 0 0 0-4.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.5 5.5v12" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2.2"/></svg>
+      <span>ツアー情報</span>
+    </button>
+    <button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>設定</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// URLから種類・アイコン・既定の名前を決める
+function kind(url){
+  let h = ''; try { h = new URL(url).hostname.replace(/^www\./,''); } catch(e){}
+  if (/icloud\.com$/.test(h) && /\/notes/.test(url)) return {k:'notes', ico:'📒', name:'iPhoneのメモ', h};
+  if (/google\.[a-z.]+$|goo\.gl$/.test(h) && /maps|goo\.gl/.test(url)) return {k:'map', ico:'📍', name:'Googleマップ', h};
+  if (/docs\.google\.com$/.test(h)) return {k:'doc', ico:'📄', name:'Googleドキュメント', h};
+  if (/instagram\.com$/.test(h)) return {k:'insta', ico:'📷', name:'Instagram', h};
+  return {k:'web', ico:'🔗', name:h || 'リンク', h};
+}
+const LINKS = [
+  {url:'https://www.icloud.com/notes/0aBcDeFgHiJkLmNoP', title:'ロンドンで行きたいところ', memo:'食事・観光の候補まとめ'},
+  {url:'https://www.icloud.com/notes/1QrStUvWxYz', title:'パリ・ローマの候補'},
+  {url:'https://www.icloud.com/notes/2PackingList', title:'持ち物リスト'},
+  {url:'https://maps.app.goo.gl/AbCdEf', title:'保存したお店（Googleマップのリスト）'},
+  {url:'https://www.instagram.com/p/XyZ123/', title:'ローマのジェラート屋さん'},
+  {url:'https://skygarden.london/booking', title:'スカイ・ガーデン予約ページ', memo:'予約は3週間前から'},
+];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function render(){
+  $('#links').innerHTML = LINKS.map(l => { const k = kind(l.url); return `
+    <li class="lk k-${k.k}">
+      <a href="${esc(l.url)}" target="_blank" rel="noopener">
+        <span class="ico">${k.ico}</span>
+        <span class="txt"><div class="ttl">${esc(l.title || k.name)}</div>
+          ${l.memo ? `<div class="memo">${esc(l.memo)}</div>` : ''}
+          <div class="host">${(!l.title || k.name === k.h) ? esc(k.h) : k.name + ' · ' + esc(k.h)}</div></span>
+      </a>
+      <button class="icon-btn" aria-label="編集">⋯</button>
+    </li>`; }).join('');
+}
+$('#addBtn').onclick = () => {
+  const u = $('#pUrl').value.trim(); if (!u) return;
+  LINKS.unshift({url:u}); $('#pUrl').value = ''; render();
+};
+render();
+</script>
+</body>
+</html>
