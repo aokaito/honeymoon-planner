@@ -17,7 +17,7 @@
 ## ファイル構成
 
 ```
-index.html            画面（ログイン / 日程 / ツアー情報 / 設定 / 編集シート / 合言葉変更シート）
+index.html            画面（ログイン / 日程 / リンク集 / ツアー情報 / 設定 / 編集シート / 合言葉変更シート）
 styles.css            見た目（CSS変数で配色を管理）
 app.js                動き（表示・日付切り替え・スワイプ・編集・同期・オフライン・合言葉）
 config.js             Supabase の URL と publishable key（公開して問題ないキー）
@@ -37,11 +37,13 @@ netlify.toml          publish = "."、sw.js は no-cache
 
 今は **2人で共有する合言葉1つ**で使う。
 
-- テーブル（`trip` / `days` / `items`）は **RLS 有効・ポリシーなし**。ブラウザから直接は読み書きできない
+- テーブル（`trip` / `days` / `items` / `links`）は **RLS 有効・ポリシーなし**。ブラウザから直接は読み書きできない
 - 読み書きはすべて、合言葉を確認する SECURITY DEFINER 関数を `sb.rpc()` で呼ぶ
-  - `get_plan(p)` → `{trip, days, items}`
+  - `get_plan(p)` → `{trip, days, items, links}`
   - `save_item(p, item jsonb)`（`item.id` が空なら追加、あれば更新。`tour` は更新しない）
   - `delete_item(p, item_id uuid)`
+  - `save_link(p, link jsonb)`（`link.id` が空なら追加。URL が http(s) でなければ `{error:'bad_url'}`）
+  - `delete_link(p, link_id uuid)`
   - `update_day(p, day_n, new_hotel, new_note)`
   - `set_start_date(p, d date)`
   - `change_passphrase(p, new_p)`（6文字以上）
@@ -61,6 +63,7 @@ netlify.toml          publish = "."、sw.js は no-cache
 - `trip`：1行だけ（`id = 1`）。`start_date` は 2027-01-09
 - `days`：`n`（1〜9）、`city`（`lon` / `par` / `rom` / `move`）、`route`、`stay`、`meals` jsonb（`{b,l,d}`。値が `"付"` なら付きという意味、それ以外は料理名）、`hotel`、`note`
 - `items`：`id` uuid、`day`、`time` / `end_time`（`"HH:MM"` または空文字）、`title`、`cat`（`sight` / `food` / `move` / `shop` / `rest` / `other`）、`place`（Googleマップ検索のリンクに使う）、`url`、`note`、`tour`（ツアーに含まれる予定なら true）、`sort_order`
+- `links`：`id` uuid、`title`（空ならURLから「iPhoneのメモ」などと表示）、`url`、`note`、`sort_order`（追加時の `Date.now()`。大きい順＝新しい順に表示）
 - 最初のデータはツアーページの内容から作った。ユーザーが追加した予定は `tour = false`
 - スキーマを変えるときはマイグレーションで行い、変更後に `get_advisors(security)` で確認する
 
@@ -69,7 +72,7 @@ netlify.toml          publish = "."、sw.js は no-cache
 - 保存したら、Realtime の broadcast（`honeymoon-sync` チャンネル、`changed` イベント）で「変わった」という合図だけを送る。受け取った側は `get_plan` を呼び直す。データ自体は流さない
 - 合図を取りこぼしたときのため、画面が表示されている間は60秒ごとと、画面が前面に戻ったときにも取り直す
 - 取得した日程は `localStorage`（`honeymoon-cache-v1`）に保存する。圏外のときはこれを表示し、編集はできない状態（`body.readonly`）にする
-- `sw.js` は画面ファイルとフォントを端末に保存する。**画面ファイルを変えたら `sw.js` の `VERSION` を必ず上げる**（今は `v6`）。上げないと、利用者の端末に古い画面が残る
+- `sw.js` は画面ファイルとフォントを端末に保存する。**画面ファイルを変えたら `sw.js` の `VERSION` を必ず上げる**（今は `v8`）。上げないと、利用者の端末に古い画面が残る
 - 選んでいる日は `localStorage`（`honeymoon-day`）に保存する。旅行中は、開いたときにその日を表示する
 
 ## UI（スマホ向けに作り直したもの）
@@ -77,7 +80,9 @@ netlify.toml          publish = "."、sw.js は no-cache
 - 上部：タイトル「新婚旅行のしおり」＋「出発まで○日」、その下に横スクロールの日付チップ（DAY n / 日付 / 曜日、都市の色の線）
 - 日程タブ：**1日ずつ表示**する。上に都市の色のカード（DAY・日付・行程・朝昼夕食・宿泊ボタン・その日のメモ）、その下に「スケジュール」（時刻あり）と「時間未定」の予定カードをタイムライン形式で並べる。最後に前の日・次の日ボタン。左右のスワイプでも日を切り替えられる
 - 右下の丸い＋ボタン：表示している日に予定を追加する
-- 下部のタブ：日程 / ツアー情報 / 設定（出発日・同期状況・バックアップのコピー・合言葉の変更・ログアウト）
+- 下部のタブ：日程 / リンク / ツアー情報
+- 設定（出発日・同期状況・バックアップのコピー・合言葉の変更・ログアウト）は、右上の歯車ボタンから開く
+- リンクタブ：上の欄にURLを貼って「追加」（文字が混ざっていてもURL部分だけを取り出す）。URLを見て iPhoneのメモ📒 / Googleマップ📍 / Instagram📷 / Googleドキュメント📄 / その他🔗 のアイコンを付ける。「⋯」で名前・URL・ひとことメモの編集と削除
 - 編集は下から出るシート。タイトルと閉じるボタンを上、保存ボタンを下に固定。カテゴリはボタンで選ぶ
 
 ### 配色（ユーザー指定のパレット）

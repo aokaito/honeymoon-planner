@@ -43,7 +43,12 @@
         <div class="brand-title">新婚旅行のしおり</div>
         <div class="brand-sub">ロンドン・パリ・ローマ</div>
       </div>
-      <span class="countdown" id="countdown" hidden></span>
+      <div class="appbar-actions">
+        <span class="countdown" id="countdown" hidden></span>
+        <button class="icon-btn gear" id="gearBtn" aria-label="設定">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.2h3.4l.5 2.4 1.6.9 2.3-.8 1.7 2.9-1.8 1.6v1.6l1.8 1.6-1.7 2.9-2.3-.8-1.6.9-.5 2.4h-3.4l-.5-2.4-1.6-.9-2.3.8-1.7-2.9 1.8-1.6v-1.6L3.2 9.5l1.7-2.9 2.3.8 1.6-.9z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+        </button>
+      </div>
     </div>
     <nav class="daystrip" id="daystrip" aria-label="日付を選ぶ"></nav>
   </header>
@@ -51,6 +56,16 @@
   <div class="banner" id="status" hidden></div>
 
   <main class="view" id="plan" aria-live="polite"></main>
+
+  <main class="view links" id="links" hidden>
+    <h2 class="view-title">リンク集</h2>
+    <form class="paste" id="pasteForm" autocomplete="off" novalidate>
+      <input id="pasteUrl" type="url" inputmode="url" placeholder="URLを貼り付け" aria-label="URL" enterkeyhint="done">
+      <button class="btn" id="pasteBtn" type="submit">追加</button>
+    </form>
+    <p class="hint paste-hint">iPhoneのメモ・Googleマップ・お店のページなどのURLを貼って「追加」。名前はあとから「⋯」で変えられます</p>
+    <ul class="lklist" id="linkList"></ul>
+  </main>
 
   <main class="view info" id="info" hidden>
     <h2 class="view-title">ツアー情報</h2>
@@ -145,13 +160,13 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span>日程</span>
     </button>
+    <button data-tab="links">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>リンク</span>
+    </button>
     <button data-tab="info">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v1.8a2.2 2.2 0 0 0 0 4.4v1.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5v-1.8a2.2 2.2 0 0 0 0-4.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.5 5.5v12" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2.2"/></svg>
       <span>ツアー情報</span>
-    </button>
-    <button data-tab="settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>設定</span>
     </button>
   </nav>
 </div>
@@ -192,10 +207,15 @@
         <label class="field">ホテル名<input id="fHotel" maxlength="200" placeholder="最終日程表で決まったら入力"></label>
         <label class="field">この日のメモ<textarea id="fDayNote" maxlength="2000" rows="6" placeholder="服装、集合時間、気をつけることなど"></textarea></label>
       </div>
+      <div id="linkFields" hidden>
+        <label class="field">名前<input id="lkTitle" maxlength="200" placeholder="空欄ならURLから自動で付けます"></label>
+        <label class="field">URL<input id="lkUrl" type="url" inputmode="url" maxlength="2000" placeholder="https://"></label>
+        <label class="field">ひとことメモ<input id="lkNote" maxlength="2000" placeholder="例：食事・観光の候補まとめ"></label>
+      </div>
       <div id="delRow">
-        <button type="button" class="btn quiet danger block" id="delBtn">この予定を削除</button>
+        <button type="button" class="btn quiet danger block" id="delBtn"><span id="delLabel">この予定を削除</span></button>
         <div class="confirm" id="confirmBox">
-          <p>この予定を削除しますか？</p>
+          <p id="confirmText">この予定を削除しますか？</p>
           <div class="row2"><button type="button" class="btn ghost" id="noDel">やめる</button><button type="button" class="btn danger-fill" id="yesDel">削除する</button></div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 // オフラインでも日程を開けるようにするための Service Worker。
 // 画面のファイルを端末に保存しておき、圏外のときはそこから表示する。
 // ファイルを更新したら VERSION を上げる。
-const VERSION = "v7";
+const VERSION = "v8";
 const SHELL = `shell-${VERSION}`;
 const FONTS = "fonts";
 const SHELL_FILES = [

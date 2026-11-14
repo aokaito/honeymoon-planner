@@ -36,7 +36,7 @@
     },
   };
 
-  const state = { trip: {}, days: [], items: [], syncedAt: null, online: navigator.onLine, canEdit: false, day: null, tab: "plan" };
+  const state = { trip: {}, days: [], items: [], links: [], syncedAt: null, online: navigator.onLine, canEdit: false, day: null, tab: "plan" };
   let sb = null;
   let pass = null;
   let editing = null;
@@ -50,6 +50,7 @@
       state.trip = c.trip || {};
       state.days = c.days || [];
       state.items = c.items || [];
+      state.links = c.links || [];
       state.syncedAt = c.syncedAt || null;
       return state.days.length > 0;
     } catch (_) {
@@ -57,7 +58,7 @@
     }
   }
   function saveCache() {
-    store.set(CACHE_KEY, JSON.stringify({ trip: state.trip, days: state.days, items: state.items, syncedAt: state.syncedAt }));
+    store.set(CACHE_KEY, JSON.stringify({ trip: state.trip, days: state.days, items: state.items, links: state.links, syncedAt: state.syncedAt }));
   }
 
   // ---------- helpers ----------
@@ -223,12 +224,50 @@
       <div class="daynav">${navBtn(prev, "prev", "前の日")}${navBtn(next, "next", "次の日")}</div>`;
   }
 
+  // ---------- links ----------
+  // URL から種類（アイコン）と、名前が空のときの表示名を決める
+  function linkKind(url) {
+    let h = "";
+    try {
+      h = new URL(url).hostname.replace(/^www\./, "");
+    } catch (_) {}
+    if (/(^|\.)icloud\.com$/.test(h) && /\/notes/.test(url)) return { k: "notes", ico: "📒", name: "iPhoneのメモ", h };
+    if (/^maps\.app\.goo\.gl$|^goo\.gl$/.test(h) || (/(^|\.)google\.[a-z.]+$/.test(h) && /\/maps/.test(url))) return { k: "map", ico: "📍", name: "Googleマップ", h };
+    if (h === "docs.google.com" || h === "drive.google.com") return { k: "doc", ico: "📄", name: "Googleドキュメント", h };
+    if (/(^|\.)instagram\.com$/.test(h)) return { k: "insta", ico: "📷", name: "Instagram", h };
+    return { k: "web", ico: "🔗", name: h || "リンク", h };
+  }
+  function renderLinks() {
+    const list = [...state.links].sort((a, b) => (b.sort_order || 0) - (a.sort_order || 0));
+    if (!list.length) {
+      $("linkList").innerHTML = `<li class="empty">まだリンクがありません。<br>上の欄にURLを貼って追加できます</li>`;
+      return;
+    }
+    $("linkList").innerHTML = list
+      .map((l) => {
+        const url = safeUrl(l.url);
+        const k = linkKind(url);
+        const host = !l.title || k.name === k.h ? k.h : `${k.name} · ${k.h}`;
+        return `<li class="lk k-${k.k}">
+          <a href="${esc(url)}" target="_blank" rel="noopener">
+            <span class="ico" aria-hidden="true">${k.ico}</span>
+            <span class="txt"><span class="ttl">${esc(l.title || k.name)}</span>
+              ${l.note ? `<span class="lnote">${esc(l.note)}</span>` : ""}
+              <span class="host">${esc(host)}</span></span>
+          </a>
+          <button class="icon-btn" data-link="${esc(l.id)}" aria-label="編集">⋯</button>
+        </li>`;
+      })
+      .join("");
+  }
+
   function renderAll() {
     document.body.classList.toggle("readonly", !editable());
     pickInitialDay();
     renderHeader();
     renderStrip();
     renderPlan();
+    renderLinks();
     renderStatus();
     $("fab").hidden = state.tab !== "plan";
   }
@@ -241,7 +280,8 @@
   // ---------- navigation ----------
   function showTab(t) {
     state.tab = t;
-    ["plan", "info", "settings"].forEach((v) => ($(v).hidden = v !== t));
+    ["plan", "links", "info", "settings"].forEach((v) => ($(v).hidden = v !== t));
+    t === "settings" ? $("gearBtn").setAttribute("aria-current", "page") : $("gearBtn").removeAttribute("aria-current");
     $("daystrip").hidden = t !== "plan";
     $("fab").hidden = t !== "plan";
     document.querySelectorAll(".tabbar button").forEach((b) => (b.dataset.tab === t ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
@@ -249,6 +289,7 @@
     if (t === "plan") scrollStripToCurrent(false);
   }
   document.querySelectorAll(".tabbar button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
+  $("gearBtn").onclick = () => showTab("settings");
 
   function goDay(n) {
     if (!state.days.some((d) => d.n === n) || n === state.day) return;
@@ -330,11 +371,22 @@
     editing = { mode, obj };
     $("confirmBox").classList.remove("show");
     const isDay = mode === "day";
-    $("itemFields").hidden = isDay;
+    const isLink = mode === "link";
+    $("itemFields").hidden = isDay || isLink;
     $("dayFields").hidden = !isDay;
-    $("fTitle").required = !isDay;
-    $("delRow").hidden = mode !== "edit";
-    if (isDay) {
+    $("linkFields").hidden = !isLink;
+    $("fTitle").required = !isDay && !isLink;
+    $("delRow").hidden = mode !== "edit" && !isLink;
+    const what = isLink ? "リンク" : "予定";
+    $("delLabel").textContent = `この${what}を削除`;
+    $("confirmText").textContent = `この${what}を削除しますか？`;
+    if (isLink) {
+      $("sheetTitle").textContent = "リンクを編集";
+      $("lkTitle").value = obj.title || "";
+      $("lkTitle").placeholder = `空欄なら「${linkKind(obj.url).name}」と表示`;
+      $("lkUrl").value = obj.url || "";
+      $("lkNote").value = obj.note || "";
+    } else if (isDay) {
       $("sheetTitle").textContent = `DAY ${obj.n} の宿泊・メモ`;
       $("fHotel").value = obj.hotel || "";
       $("fDayNote").value = obj.note || "";
@@ -392,6 +444,40 @@
     }
   });
 
+  $("linkList").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-link]");
+    if (!b) return;
+    const obj = state.links.find((l) => l.id === b.dataset.link);
+    if (obj) openSheet("link", obj);
+  });
+
+  $("pasteForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!editable()) return;
+    const input = $("pasteUrl");
+    // 「メモ https://…」のように文字が混ざっていても URL 部分だけを取り出す
+    const m = input.value.match(/https?:\/\/\S+/i);
+    const url = m ? safeUrl(m[0]) : "";
+    if (!url) {
+      renderStatus({ msg: "URL（https:// で始まるもの）を貼り付けてください" });
+      return input.focus();
+    }
+    $("pasteBtn").disabled = true;
+    try {
+      await rpc("save_link", { link: { id: "", title: "", url, note: "", sort_order: Date.now() } });
+      input.value = "";
+      input.blur();
+      renderStatus();
+      notifyOthers();
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      if (!handleAuthError(err)) renderStatus({ msg: "追加できませんでした。通信状況を確認してもう一度お試しください" });
+    } finally {
+      $("pasteBtn").disabled = false;
+    }
+  });
+
   // ---------- data access (all through passphrase-checked RPCs) ----------
   async function rpc(name, args) {
     const { data, error } = await sb.rpc(name, { p: pass, ...args });
@@ -446,6 +532,13 @@
     e.preventDefault();
     if (!editing || !editable()) return;
     const { mode, obj } = editing;
+    if (mode === "link") {
+      const link = { id: obj.id, title: $("lkTitle").value.trim(), url: safeUrl($("lkUrl").value.trim()), note: $("lkNote").value.trim() };
+      if (!link.url) return $("lkUrl").focus();
+      if (link.title === (obj.title || "") && link.url === obj.url && link.note === (obj.note || "")) return closeSheet();
+      guarded(() => rpc("save_link", { link }));
+      return;
+    }
     if (mode === "day") {
       const hotel = $("fHotel").value.trim();
       const note = $("fDayNote").value.trim();
@@ -473,6 +566,7 @@
   $("noDel").onclick = () => $("confirmBox").classList.remove("show");
   $("yesDel").onclick = () => {
     if (editing?.mode === "edit") guarded(() => rpc("delete_item", { item_id: editing.obj.id }));
+    else if (editing?.mode === "link") guarded(() => rpc("delete_link", { link_id: editing.obj.id }));
   };
 
   let dateTimer = null;
@@ -493,7 +587,7 @@
   });
 
   $("copyBackup").onclick = async () => {
-    const text = JSON.stringify({ trip: state.trip, days: dayList(), items: state.items, syncedAt: state.syncedAt }, null, 2);
+    const text = JSON.stringify({ trip: state.trip, days: dayList(), items: state.items, links: state.links, syncedAt: state.syncedAt }, null, 2);
     try {
       await navigator.clipboard.writeText(text);
       $("copyMsg").textContent = "コピーしました";
@@ -512,6 +606,7 @@
         state.trip = data.trip || {};
         state.days = data.days || [];
         state.items = data.items || [];
+        state.links = data.links || [];
         state.syncedAt = new Date().toISOString();
         state.canEdit = true;
         saveCache();
