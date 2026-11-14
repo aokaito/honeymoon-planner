@@ -9,27 +9,26 @@
 <style>
 /* ---- 候補画面だけのスタイル（モック用） ---- */
 .tabbar{grid-template-columns:repeat(4,1fr)}
-.citytabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 16px 8px}
-.citytab{min-height:48px;border:1.5px solid var(--city);background:var(--card);border-radius:14px;font-size:15px;font-weight:500;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
-.citytab small{font-size:11px;color:var(--sub);font-weight:400}
+.citytabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 16px 12px}
+.citytab{min-height:48px;border:1.5px solid var(--city);background:var(--card);border-radius:14px;font-size:15px;font-weight:500;color:var(--ink)}
 .citytab[aria-current="true"]{background:var(--city)}
-.citytab[aria-current="true"][data-light="0"],.citytab[aria-current="true"][data-light="0"] small{color:#fff}
-.catfilter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 12px}
-.catfilter button{min-height:40px;padding:0 4px;white-space:nowrap;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13.5px;color:var(--ink)}
-.catfilter button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
-.catfilter .n{font-size:11.5px;opacity:.7;margin-left:3px}
-.idea{position:relative;background:var(--card);border-radius:16px;padding:12px 14px 12px 18px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
-.idea::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--dot)}
-.idea-top{display:flex;align-items:flex-start;gap:8px}
-.idea-title{flex:1;font-size:16.5px;font-weight:500;line-height:1.45;padding-top:2px}
-.fav{flex:none;width:44px;height:44px;margin:-8px -10px -8px 0;border:none;background:none;font-size:22px;color:var(--pink-l);display:grid;place-items:center}
-.fav[aria-pressed="true"]{color:var(--pink)}
-.idea .it-note{margin-top:2px}
-.idea.done{opacity:.55}
-.idea.done .idea-title{text-decoration:line-through;text-decoration-color:var(--pink-l)}
-#list>.sec:first-child{margin-top:4px}
-.sec .cnt{font-size:11.5px;letter-spacing:0}
-.mock-note{margin:20px 4px 0;font-size:12px;color:var(--sub);text-align:center}
+.citytab[aria-current="true"][data-light="0"]{color:#fff}
+.view{padding-bottom:calc(var(--tabbar-h) + var(--safe-b) + 24px)}
+.note-pad{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border-top:5px solid var(--city)}
+.cattabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.cattabs button{min-height:48px;border:none;background:none;font-size:15px;color:var(--sub);position:relative}
+.cattabs button .n{font-size:12px;margin-left:4px;opacity:.8}
+.cattabs button[aria-selected="true"]{color:var(--ink);font-weight:700}
+.cattabs button[aria-selected="true"]::after{content:"";position:absolute;left:22%;right:22%;bottom:-1px;height:3px;border-radius:3px;background:var(--city)}
+.memo{display:block;width:100%;min-height:calc(100dvh - 330px);border:none;outline:none;resize:none;background:transparent;
+  font-size:16px;line-height:36px;padding:2px 16px 36px 16px;color:var(--ink);
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,var(--line) 35px,var(--line) 36px);
+  background-attachment:local;background-position:0 2px}
+.memo::placeholder{color:#c2b3a9}
+.pad-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--sub)}
+.saved{display:inline-flex;align-items:center;gap:5px}
+.saved::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green)}
+.mock-note{margin:16px 4px 0;font-size:12px;color:var(--sub);text-align:center}
 </style>
 </head>
 <body>
@@ -42,14 +41,16 @@
       </div>
     </div>
     <nav class="citytabs" id="citytabs"></nav>
-    <nav class="catfilter" id="catfilter"></nav>
   </header>
 
-  <main class="view" id="list"></main>
-
-  <button class="fab" id="fab" aria-label="候補を追加">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
-  </button>
+  <main class="view">
+    <section class="note-pad" id="pad">
+      <div class="cattabs" id="cattabs" role="tablist"></div>
+      <textarea class="memo" id="memo" enterkeyhint="enter" spellcheck="false"></textarea>
+      <div class="pad-foot"><span id="count"></span><span class="saved" id="saved">保存済み</span></div>
+    </section>
+    <p class="mock-note">※ 画面イメージ（ダミーデータ）です。1行＝1件。打つと自動で保存し、2人の画面に反映される想定</p>
+  </main>
 
   <nav class="tabbar" aria-label="メニュー">
     <button>
@@ -71,112 +72,51 @@
   </nav>
 </div>
 
-<!-- 候補の追加・編集シート -->
-<div class="sheet-bg" id="sheetBg">
-  <form class="sheet" id="sheet" autocomplete="off" onsubmit="return false">
-    <div class="sheet-head">
-      <h3 id="sheetTitle">候補を追加</h3>
-      <button type="button" class="icon-btn" id="closeBtn" aria-label="閉じる">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body">
-      <label class="field">名前<input id="fTitle" maxlength="120" placeholder="例：ルーヴル美術館、気になるカフェ"></label>
-      <div class="field">都市
-        <div class="seg-pick" id="fCity"></div>
-      </div>
-      <div class="field">種類
-        <div class="seg-pick" id="fCat"></div>
-      </div>
-      <label class="field">場所（Googleマップで開けます）<input id="fPlace" maxlength="200" placeholder="例：Musée du Louvre"></label>
-      <label class="field">メモ<textarea id="fNote" rows="4" placeholder="おすすめ、営業時間、予約の要不要など"></textarea></label>
-      <label class="field">参考URL<input type="url" inputmode="url" placeholder="https://"></label>
-    </div>
-    <div class="sheet-foot">
-      <button type="button" class="btn primary block" id="saveBtn">保存</button>
-    </div>
-  </form>
-</div>
-
 <script>
 const CITIES = [
-  {k:'lon', name:'ロンドン', en:'London', light:1},
-  {k:'par', name:'パリ', en:'Paris', light:1},
-  {k:'rom', name:'ローマ', en:'Roma', light:0},
+  {k:'lon', name:'ロンドン', light:1},
+  {k:'par', name:'パリ', light:1},
+  {k:'rom', name:'ローマ', light:0},
 ];
 const CATS = [
-  {k:'food',  name:'食事',  ico:'🍽'},
-  {k:'sight', name:'観光',  ico:'🏛'},
-  {k:'other', name:'その他', ico:'📝'},
+  {k:'food', name:'食事', ph:'例：\nDishoom（朝食のベーコンナン）\nアフタヌーンティー'},
+  {k:'sight', name:'観光', ph:'例：\nナショナル・ギャラリー\nスカイ・ガーデン（要予約）'},
+  {k:'other', name:'その他', ph:'例：\n紅茶のおみやげ\nオイスターカード'},
 ];
-// ダミーデータ
-const IDEAS = [
-  {city:'lon', cat:'food', title:'Dishoom（インド料理）', note:'朝食のベーコンナンロールが有名。行列するので早めに', place:'Dishoom Covent Garden', fav:true},
-  {city:'lon', cat:'food', title:'アフタヌーンティー', note:'どこかで1回は。ホテル系かカジュアル系か要検討', fav:false},
-  {city:'lon', cat:'sight', title:'ナショナル・ギャラリー', note:'入場無料。ゴッホのひまわり', place:'National Gallery London', fav:true},
-  {city:'lon', cat:'sight', title:'スカイ・ガーデン', note:'無料の展望台。要事前予約', place:'Sky Garden', url:'https://skygarden.london/', fav:false},
-  {city:'lon', cat:'other', title:'Fortnum & Mason で紅茶のおみやげ', place:'Fortnum & Mason Piccadilly', fav:false},
-  {city:'par', cat:'food', title:'Du Pain et des Idées', note:'エスカルゴ型のパン。日曜休み', place:'Du Pain et des Idées', fav:true},
-  {city:'par', cat:'food', title:'ビストロでディナー', note:'ハネムーンらしく1回はちゃんとしたお店', fav:false},
-  {city:'par', cat:'sight', title:'オランジュリー美術館', note:'モネの睡蓮', place:"Musée de l'Orangerie", fav:true, done:true},
-  {city:'par', cat:'other', title:'ボン・マルシェでおみやげ', place:'Le Bon Marché', fav:false},
-  {city:'rom', cat:'food', title:'カルボナーラの名店', note:'候補を2〜3軒しぼる', fav:false},
-  {city:'rom', cat:'sight', title:'トレビの泉でコイン', note:'夜のライトアップもきれい', place:'Fontana di Trevi', fav:true},
-];
-let city = 'lon', cat = 'all';
+// ダミーデータ（都市×種類ごとに1つのメモ）
+const MEMO = {
+  lon:{ food:'Dishoom（朝食のベーコンナンロール・早めに並ぶ）\nアフタヌーンティー どこかで1回\nバラ・マーケットで食べ歩き\nパブでサンデーロースト',
+        sight:'ナショナル・ギャラリー（無料）\nスカイ・ガーデン 要予約\nノッティング・ヒル', other:'Fortnum & Mason で紅茶のおみやげ\nコンタクトレス決済のカード' },
+  par:{ food:'Du Pain et des Idées（日曜休み）\nビストロでディナー1回\nマカロン食べ比べ', sight:'オランジュリー美術館（睡蓮）\nモンマルトル散歩', other:'ボン・マルシェでおみやげ' },
+  rom:{ food:'カルボナーラの名店 2〜3軒しぼる', sight:'トレビの泉でコイン（夜も）', other:'' },
+};
+let city = 'lon', cat = 'food';
 const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lines = t => t.split('\n').filter(l => l.trim()).length;
 
 function render(){
-  $('#citytabs').innerHTML = CITIES.map(c => {
-    const n = IDEAS.filter(i => i.city === c.k).length;
-    return `<button class="citytab" style="--city:var(--${c.k})" data-light="${c.light}" data-city="${c.k}" aria-current="${c.k===city}">${c.name}<small>${n}件</small></button>`;
-  }).join('');
-  const inCity = IDEAS.filter(i => i.city === city);
-  $('#catfilter').innerHTML = [{k:'all', name:'すべて'}, ...CATS].map(c => {
-    const n = c.k === 'all' ? inCity.length : inCity.filter(i => i.cat === c.k).length;
-    return `<button data-cat="${c.k}" aria-pressed="${c.k===cat}">${c.ico ? c.ico + ' ' : ''}${c.name}<span class="n">${n}</span></button>`;
-  }).join('');
-  const groups = CATS.filter(c => cat === 'all' || c.k === cat);
-  let html = '';
-  for (const g of groups){
-    const items = inCity.filter(i => i.cat === g.k).sort((a,b) => (a.done-b.done) || (b.fav-a.fav));
-    if (cat === 'all' && !items.length) continue;
-    html += `<div class="sec">${g.ico} ${g.name} <span class="cnt">${items.length}</span></div>`;
-    if (!items.length) html += `<div class="empty">まだ候補がありません。<br>右下の＋から追加できます</div>`;
-    for (const i of items){
-      html += `<div class="idea c-${g.k}${i.done?' done':''}">
-        <div class="idea-top"><div class="idea-title">${esc(i.title)}</div>
-        <button class="fav" aria-pressed="${!!i.fav}" aria-label="行きたい">${i.fav?'♥':'♡'}</button></div>
-        ${i.note ? `<div class="it-note">${esc(i.note)}</div>` : ''}
-        ${(i.place||i.url) ? `<div class="it-links">
-          ${i.place ? `<a class="pill" href="#">📍 <span>${esc(i.place)}</span></a>` : ''}
-          ${i.url ? `<a class="pill" href="#">🔗 <span>サイト</span></a>` : ''}</div>` : ''}
-      </div>`;
-    }
-  }
-  if (!inCity.length) html = `<div class="empty" style="margin-top:8px">まだ候補がありません。<br>右下の＋から追加できます</div>`;
-  html += `<p class="mock-note">※ 画面イメージ（ダミーデータ）です。♥＝特に行きたい、薄字＝行った</p>`;
-  $('#list').innerHTML = html;
+  $('#citytabs').innerHTML = CITIES.map(c =>
+    `<button class="citytab" style="--city:var(--${c.k})" data-light="${c.light}" data-city="${c.k}" aria-current="${c.k===city}">${c.name}</button>`).join('');
+  $('#cattabs').innerHTML = CATS.map(c =>
+    `<button role="tab" data-cat="${c.k}" aria-selected="${c.k===cat}">${c.name}<span class="n">${lines(MEMO[city][c.k])}</span></button>`).join('');
+  $('#pad').style.setProperty('--city', `var(--${city})`);
+  const m = $('#memo');
+  m.value = MEMO[city][cat];
+  m.placeholder = CATS.find(c => c.k === cat).ph;
+  updateCount();
 }
-function pick(el, list, val){
-  el.innerHTML = list.map(x => `<button type="button" data-v="${x.k}" aria-checked="${x.k===val}">${x.ico?x.ico+' ':''}${x.name}</button>`).join('');
-}
-function openSheet(){
-  pick($('#fCity'), CITIES, city);
-  pick($('#fCat'), CATS, cat === 'all' ? 'food' : cat);
-  $('#sheetBg').classList.add('open');
-}
+function updateCount(){ $('#count').textContent = `${lines($('#memo').value)}件`; }
+let t;
+$('#memo').addEventListener('input', e => {
+  MEMO[city][cat] = e.target.value; updateCount();
+  $('#cattabs [aria-selected="true"] .n').textContent = lines(e.target.value);
+  $('#saved').textContent = '保存中…'; clearTimeout(t); t = setTimeout(() => $('#saved').textContent = '保存済み', 700);
+});
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.city){ city = b.dataset.city; cat = 'all'; render(); }
-  else if (b.dataset.cat && b.closest('#catfilter')){ cat = b.dataset.cat; render(); }
-  else if (b.dataset.v){ b.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', x === b)); }
-  else if (b.classList.contains('fav')){ const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); b.textContent = on ? '♥' : '♡'; }
-  else if (b.id === 'fab') openSheet();
-  else if (b.id === 'closeBtn' || b.id === 'saveBtn') $('#sheetBg').classList.remove('open');
+  if (b.dataset.city){ city = b.dataset.city; render(); }
+  else if (b.dataset.cat){ cat = b.dataset.cat; render(); }
 });
-$('#sheetBg').addEventListener('click', e => { if (e.target.id === 'sheetBg') e.target.classList.remove('open'); });
 render();
 </script>
 </body>
