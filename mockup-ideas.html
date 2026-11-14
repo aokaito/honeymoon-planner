@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>画面イメージ：行き先候補</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ---- 候補画面だけのスタイル（モック用） ---- */
+.tabbar{grid-template-columns:repeat(4,1fr)}
+.citytabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 16px 8px}
+.citytab{min-height:48px;border:1.5px solid var(--city);background:var(--card);border-radius:14px;font-size:15px;font-weight:500;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+.citytab small{font-size:11px;color:var(--sub);font-weight:400}
+.citytab[aria-current="true"]{background:var(--city)}
+.citytab[aria-current="true"][data-light="0"],.citytab[aria-current="true"][data-light="0"] small{color:#fff}
+.catfilter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 12px}
+.catfilter button{min-height:40px;padding:0 4px;white-space:nowrap;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13.5px;color:var(--ink)}
+.catfilter button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.catfilter .n{font-size:11.5px;opacity:.7;margin-left:3px}
+.idea{position:relative;background:var(--card);border-radius:16px;padding:12px 14px 12px 18px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+.idea::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--dot)}
+.idea-top{display:flex;align-items:flex-start;gap:8px}
+.idea-title{flex:1;font-size:16.5px;font-weight:500;line-height:1.45;padding-top:2px}
+.fav{flex:none;width:44px;height:44px;margin:-8px -10px -8px 0;border:none;background:none;font-size:22px;color:var(--pink-l);display:grid;place-items:center}
+.fav[aria-pressed="true"]{color:var(--pink)}
+.idea .it-note{margin-top:2px}
+.idea.done{opacity:.55}
+.idea.done .idea-title{text-decoration:line-through;text-decoration-color:var(--pink-l)}
+#list>.sec:first-child{margin-top:4px}
+.sec .cnt{font-size:11.5px;letter-spacing:0}
+.mock-note{margin:20px 4px 0;font-size:12px;color:var(--sub);text-align:center}
+</style>
+</head>
+<body>
+<div id="main">
+  <header class="appbar">
+    <div class="appbar-row">
+      <div class="brand">
+        <div class="brand-title">行き先候補</div>
+        <div class="brand-sub">行きたい場所・お店のメモ</div>
+      </div>
+    </div>
+    <nav class="citytabs" id="citytabs"></nav>
+    <nav class="catfilter" id="catfilter"></nav>
+  </header>
+
+  <main class="view" id="list"></main>
+
+  <button class="fab" id="fab" aria-label="候補を追加">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+  </button>
+
+  <nav class="tabbar" aria-label="メニュー">
+    <button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>日程</span>
+    </button>
+    <button aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+      <span>候補</span>
+    </button>
+    <button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v1.8a2.2 2.2 0 0 0 0 4.4v1.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5v-1.8a2.2 2.2 0 0 0 0-4.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.5 5.5v12" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2.2"/></svg>
+      <span>ツアー情報</span>
+    </button>
+    <button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>設定</span>
+    </button>
+  </nav>
+</div>
+
+<!-- 候補の追加・編集シート -->
+<div class="sheet-bg" id="sheetBg">
+  <form class="sheet" id="sheet" autocomplete="off" onsubmit="return false">
+    <div class="sheet-head">
+      <h3 id="sheetTitle">候補を追加</h3>
+      <button type="button" class="icon-btn" id="closeBtn" aria-label="閉じる">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <label class="field">名前<input id="fTitle" maxlength="120" placeholder="例：ルーヴル美術館、気になるカフェ"></label>
+      <div class="field">都市
+        <div class="seg-pick" id="fCity"></div>
+      </div>
+      <div class="field">種類
+        <div class="seg-pick" id="fCat"></div>
+      </div>
+      <label class="field">場所（Googleマップで開けます）<input id="fPlace" maxlength="200" placeholder="例：Musée du Louvre"></label>
+      <label class="field">メモ<textarea id="fNote" rows="4" placeholder="おすすめ、営業時間、予約の要不要など"></textarea></label>
+      <label class="field">参考URL<input type="url" inputmode="url" placeholder="https://"></label>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn primary block" id="saveBtn">保存</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const CITIES = [
+  {k:'lon', name:'ロンドン', en:'London', light:1},
+  {k:'par', name:'パリ', en:'Paris', light:1},
+  {k:'rom', name:'ローマ', en:'Roma', light:0},
+];
+const CATS = [
+  {k:'food',  name:'食事',  ico:'🍽'},
+  {k:'sight', name:'観光',  ico:'🏛'},
+  {k:'other', name:'その他', ico:'📝'},
+];
+// ダミーデータ
+const IDEAS = [
+  {city:'lon', cat:'food', title:'Dishoom（インド料理）', note:'朝食のベーコンナンロールが有名。行列するので早めに', place:'Dishoom Covent Garden', fav:true},
+  {city:'lon', cat:'food', title:'アフタヌーンティー', note:'どこかで1回は。ホテル系かカジュアル系か要検討', fav:false},
+  {city:'lon', cat:'sight', title:'ナショナル・ギャラリー', note:'入場無料。ゴッホのひまわり', place:'National Gallery London', fav:true},
+  {city:'lon', cat:'sight', title:'スカイ・ガーデン', note:'無料の展望台。要事前予約', place:'Sky Garden', url:'https://skygarden.london/', fav:false},
+  {city:'lon', cat:'other', title:'Fortnum & Mason で紅茶のおみやげ', place:'Fortnum & Mason Piccadilly', fav:false},
+  {city:'par', cat:'food', title:'Du Pain et des Idées', note:'エスカルゴ型のパン。日曜休み', place:'Du Pain et des Idées', fav:true},
+  {city:'par', cat:'food', title:'ビストロでディナー', note:'ハネムーンらしく1回はちゃんとしたお店', fav:false},
+  {city:'par', cat:'sight', title:'オランジュリー美術館', note:'モネの睡蓮', place:"Musée de l'Orangerie", fav:true, done:true},
+  {city:'par', cat:'other', title:'ボン・マルシェでおみやげ', place:'Le Bon Marché', fav:false},
+  {city:'rom', cat:'food', title:'カルボナーラの名店', note:'候補を2〜3軒しぼる', fav:false},
+  {city:'rom', cat:'sight', title:'トレビの泉でコイン', note:'夜のライトアップもきれい', place:'Fontana di Trevi', fav:true},
+];
+let city = 'lon', cat = 'all';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function render(){
+  $('#citytabs').innerHTML = CITIES.map(c => {
+    const n = IDEAS.filter(i => i.city === c.k).length;
+    return `<button class="citytab" style="--city:var(--${c.k})" data-light="${c.light}" data-city="${c.k}" aria-current="${c.k===city}">${c.name}<small>${n}件</small></button>`;
+  }).join('');
+  const inCity = IDEAS.filter(i => i.city === city);
+  $('#catfilter').innerHTML = [{k:'all', name:'すべて'}, ...CATS].map(c => {
+    const n = c.k === 'all' ? inCity.length : inCity.filter(i => i.cat === c.k).length;
+    return `<button data-cat="${c.k}" aria-pressed="${c.k===cat}">${c.ico ? c.ico + ' ' : ''}${c.name}<span class="n">${n}</span></button>`;
+  }).join('');
+  const groups = CATS.filter(c => cat === 'all' || c.k === cat);
+  let html = '';
+  for (const g of groups){
+    const items = inCity.filter(i => i.cat === g.k).sort((a,b) => (a.done-b.done) || (b.fav-a.fav));
+    if (cat === 'all' && !items.length) continue;
+    html += `<div class="sec">${g.ico} ${g.name} <span class="cnt">${items.length}</span></div>`;
+    if (!items.length) html += `<div class="empty">まだ候補がありません。<br>右下の＋から追加できます</div>`;
+    for (const i of items){
+      html += `<div class="idea c-${g.k}${i.done?' done':''}">
+        <div class="idea-top"><div class="idea-title">${esc(i.title)}</div>
+        <button class="fav" aria-pressed="${!!i.fav}" aria-label="行きたい">${i.fav?'♥':'♡'}</button></div>
+        ${i.note ? `<div class="it-note">${esc(i.note)}</div>` : ''}
+        ${(i.place||i.url) ? `<div class="it-links">
+          ${i.place ? `<a class="pill" href="#">📍 <span>${esc(i.place)}</span></a>` : ''}
+          ${i.url ? `<a class="pill" href="#">🔗 <span>サイト</span></a>` : ''}</div>` : ''}
+      </div>`;
+    }
+  }
+  if (!inCity.length) html = `<div class="empty" style="margin-top:8px">まだ候補がありません。<br>右下の＋から追加できます</div>`;
+  html += `<p class="mock-note">※ 画面イメージ（ダミーデータ）です。♥＝特に行きたい、薄字＝行った</p>`;
+  $('#list').innerHTML = html;
+}
+function pick(el, list, val){
+  el.innerHTML = list.map(x => `<button type="button" data-v="${x.k}" aria-checked="${x.k===val}">${x.ico?x.ico+' ':''}${x.name}</button>`).join('');
+}
+function openSheet(){
+  pick($('#fCity'), CITIES, city);
+  pick($('#fCat'), CATS, cat === 'all' ? 'food' : cat);
+  $('#sheetBg').classList.add('open');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.city){ city = b.dataset.city; cat = 'all'; render(); }
+  else if (b.dataset.cat && b.closest('#catfilter')){ cat = b.dataset.cat; render(); }
+  else if (b.dataset.v){ b.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', x === b)); }
+  else if (b.classList.contains('fav')){ const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); b.textContent = on ? '♥' : '♡'; }
+  else if (b.id === 'fab') openSheet();
+  else if (b.id === 'closeBtn' || b.id === 'saveBtn') $('#sheetBg').classList.remove('open');
+});
+$('#sheetBg').addEventListener('click', e => { if (e.target.id === 'sheetBg') e.target.classList.remove('open'); });
+render();
+</script>
+</body>
+</html>
